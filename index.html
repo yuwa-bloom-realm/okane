@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f7f5f1">
+<meta name="color-scheme" content="light only">
+<title>お金との距離感診断</title>
+<style>
+/* ============================================================
+   お金との距離感診断 ｜ モニター版
+   デザイン方針：白〜淡いニュートラル基調。
+   静か・上質・温かい。金運系の派手さは徹底して避ける。
+   「お金を見る」ではなく「自分を見る」体験。
+   ============================================================ */
+
+/* --- fonts --- */
+@import url('https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap');
+
+:root{
+  /* ニュートラルで温かい白のグラデーション層 */
+  --paper:        #f7f5f1;   /* 背景の生成り */
+  --paper-soft:   #fbfaf7;   /* カード面 */
+  --ink:          #2f2a24;   /* 主文字：黒ではなく墨に近い茶 */
+  --ink-soft:     #6b6358;   /* 補助文字 */
+  --ink-faint:    #a49b8d;   /* さらに薄い */
+  --line:         #e6e0d6;   /* 罫線 */
+  --line-soft:    #efeae2;
+  /* アクセント：金色ではなく、くすんだ橄欖(オリーブ)〜緑がかった土 */
+  --accent:       #7c8466;   /* 選択・進行 */
+  --accent-deep:  #5f6650;
+  --accent-wash:  #eef0e8;   /* 選択の背景 */
+  --shadow:       0 1px 2px rgba(47,42,36,.04), 0 8px 24px rgba(47,42,36,.05);
+  --radius:       16px;
+}
+
+/* 端末のダークモードに関わらず、この配色で表示を固定する */
+:root{ color-scheme:light only; }
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ margin:0; padding:0; }
+html{ background:#f7f5f1; }
+body{
+  background:var(--paper) !important;
+  color:var(--ink) !important;
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:16px;
+  line-height:1.9;
+  -webkit-font-smoothing:antialiased;
+  letter-spacing:.02em;
+  overflow-x:hidden;
+}
+
+/* うっすらとした縦のテクスチャ（紙目のような静けさ） */
+body::before{
+  content:"";
+  position:fixed; inset:0;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(124,132,102,.04), transparent 55%),
+    radial-gradient(circle at 85% 85%, rgba(124,132,102,.03), transparent 55%);
+  pointer-events:none; z-index:0;
+}
+
+.app{
+  position:relative; z-index:1;
+  max-width:560px; margin:0 auto;
+  min-height:100vh; min-height:100dvh;
+  padding:0 22px;
+  display:flex; flex-direction:column;
+}
+
+/* ===== 共通：見出し・本文 ===== */
+.mincho{ font-family:'Zen Old Mincho', serif; }
+
+/* ===== 画面切替 ===== */
+.screen{ display:none; flex:1; flex-direction:column; padding:34px 0 44px; animation:fade .5s ease; }
+.screen.active{ display:flex; }
+@keyframes fade{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+
+/* ===== START画面 ===== */
+.start-eyebrow{
+  font-family:'Zen Old Mincho', serif;
+  font-size:12px; letter-spacing:.32em; color:var(--ink-faint);
+  text-align:center; margin:8px 0 26px;
+}
+.start-lead{
+  font-family:'Zen Old Mincho', serif;
+  font-size:20px; line-height:2.2; color:var(--ink);
+  text-align:center; margin:0 0 30px; font-weight:500;
+}
+.start-body{
+  font-size:15px; line-height:2.15; color:var(--ink-soft);
+  text-align:center; margin:0 auto 24px; max-width:26em;
+}
+.start-body.spaced{ white-space:pre-line; }
+.start-role{
+  font-family:'Zen Old Mincho', serif;
+  font-size:17px; color:var(--ink); text-align:center;
+  line-height:2.3; margin:6px 0 22px; font-weight:500;
+}
+.start-role .em{ color:var(--accent-deep); font-weight:600; }
+.divider-dot{
+  text-align:center; color:var(--ink-faint); letter-spacing:.6em;
+  margin:26px 0; font-size:13px;
+}
+.start-note{
+  font-size:13.5px; color:var(--ink-faint); text-align:center;
+  line-height:2; margin:22px 0 4px;
+}
+
+/* ===== ボタン ===== */
+.btn{
+  appearance:none; border:none; cursor:pointer;
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:16px; font-weight:500; letter-spacing:.08em;
+  color:#fff; background:var(--accent);
+  padding:17px 28px; border-radius:999px; width:100%;
+  box-shadow:0 6px 18px rgba(124,132,102,.28);
+  transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+}
+.btn:active{ transform:translateY(1px) scale(.99); background:var(--accent-deep); }
+.btn:disabled{ opacity:.5; cursor:default; box-shadow:none; }
+.btn-ghost{
+  background:transparent; color:var(--ink-soft);
+  border:1px solid var(--line); box-shadow:none;
+  padding:15px 24px; font-size:15px;
+}
+.btn-ghost:active{ background:var(--line-soft); color:var(--ink); }
+.btn-wrap{ margin-top:auto; padding-top:24px; }
+
+/* ===== 進捗 ===== */
+.progress{ padding:22px 0 4px; }
+.progress-top{
+  display:flex; justify-content:space-between; align-items:baseline;
+  margin-bottom:10px;
+}
+.progress-count{
+  font-family:'Zen Old Mincho', serif;
+  font-size:13px; letter-spacing:.18em; color:var(--ink-soft);
+}
+.progress-count b{ color:var(--accent-deep); font-weight:600; font-size:15px; }
+.progress-label{ font-size:11px; letter-spacing:.28em; color:var(--ink-faint); }
+.progress-bar{ height:3px; background:var(--line-soft); border-radius:2px; overflow:hidden; }
+.progress-fill{
+  height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-deep));
+  width:0; border-radius:2px; transition:width .5s cubic-bezier(.4,0,.2,1);
+}
+
+/* ===== 質問 ===== */
+.q-num{
+  font-family:'Zen Old Mincho', serif;
+  font-size:13px; letter-spacing:.2em; color:var(--accent-deep);
+  margin:30px 0 12px;
+}
+.q-text{
+  font-family:'Zen Old Mincho', serif;
+  font-size:19px; line-height:1.95; color:var(--ink);
+  font-weight:500; margin:0 0 26px;
+}
+.options{ display:flex; flex-direction:column; gap:11px; }
+.opt{
+  display:block; width:100%; text-align:left; cursor:pointer;
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:15.5px; line-height:1.7; color:var(--ink);
+  background:var(--paper-soft); border:1px solid var(--line);
+  border-radius:14px; padding:16px 18px;
+  transition:border-color .18s ease, background .18s ease, transform .12s ease;
+  position:relative;
+}
+.opt:active{ transform:scale(.99); }
+.opt .mark{
+  display:inline-block; width:18px; height:18px; margin-right:12px;
+  border:1.5px solid var(--line); border-radius:50%;
+  vertical-align:-3px; transition:all .18s ease; position:relative; flex:none;
+}
+.opt.selected{
+  border-color:var(--accent); background:var(--accent-wash);
+}
+.opt.selected .mark{
+  border-color:var(--accent); background:var(--accent);
+}
+.opt.selected .mark::after{
+  content:""; position:absolute; inset:0; margin:auto;
+  width:6px; height:6px; background:#fff; border-radius:50%;
+}
+.opt-inner{ display:flex; align-items:flex-start; }
+.opt-inner .label{ flex:1; }
+
+/* 自由記述 */
+.freetext{
+  width:100%; min-height:120px; resize:vertical;
+  font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:15.5px; line-height:1.8; color:var(--ink) !important;
+  background:var(--paper-soft) !important; border:1px solid var(--line);
+  -webkit-text-fill-color:var(--ink);
+  border-radius:14px; padding:16px 18px;
+  transition:border-color .18s ease;
+}
+.freetext:focus{ outline:none; border-color:var(--accent); }
+/* 「その他」自由記述の追従欄 */
+.sub-free{
+  margin-top:11px; display:none;
+}
+.sub-free.show{ display:block; animation:fade .3s ease; }
+
+/* ===== ナビ（戻る／次へ） ===== */
+.nav{
+  display:flex; gap:12px; margin-top:auto; padding-top:28px;
+}
+.nav .btn{ flex:1; }
+.nav .btn-ghost{ flex:0 0 34%; }
+
+/* ===== 中間画面 ===== */
+.interlude{
+  flex:1; display:flex; flex-direction:column;
+  justify-content:center; align-items:center; text-align:center;
+  padding:40px 4px;
+}
+.interlude .mark-line{
+  width:40px; height:1px; background:var(--line); margin:0 auto 30px;
+}
+.interlude-lead{
+  font-family:'Zen Old Mincho', serif;
+  font-size:19px; line-height:2.1; color:var(--ink);
+  font-weight:500; margin:0 0 22px;
+}
+.interlude-body{
+  font-size:15px; line-height:2.1; color:var(--ink-soft);
+  max-width:24em; margin:0 auto;
+}
+
+/* ===== 基本情報／連絡方法など：入力ブロック ===== */
+.field-label{
+  font-family:'Zen Old Mincho', serif;
+  font-size:15px; color:var(--ink); font-weight:500;
+  margin:0 0 8px;
+}
+.field-note{ font-size:13px; color:var(--ink-soft); line-height:1.9; margin:0 0 16px; }
+.field-note.small{ font-size:12.5px; color:var(--ink-faint); }
+.text-input{
+  width:100%; font-family:'Zen Kaku Gothic New', sans-serif;
+  font-size:16px; color:var(--ink) !important;
+  background:var(--paper-soft) !important; border:1px solid var(--line);
+  -webkit-text-fill-color:var(--ink);
+  border-radius:14px; padding:16px 18px;
+  transition:border-color .18s ease;
+}
+.text-input:focus{ outline:none; border-color:var(--accent); }
+.section-title{
+  font-family:'Zen Old Mincho', serif;
+  font-size:22px; color:var(--ink); font-weight:600;
+  line-height:1.7; margin:8px 0 20px;
+}
+.body-copy{
+  font-size:15px; line-height:2.1; color:var(--ink-soft);
+  margin:0 0 18px; white-space:pre-line;
+}
+.body-copy.center{ text-align:center; }
+
+/* 連絡方法の選択カード */
+.choice-cards{ display:flex; flex-direction:column; gap:12px; margin:6px 0 0; }
+.choice{
+  cursor:pointer; text-align:left; width:100%;
+  background:var(--paper-soft); border:1px solid var(--line);
+  border-radius:16px; padding:20px 20px;
+  transition:border-color .18s, background .18s, transform .12s;
+  display:flex; align-items:center; gap:14px;
+}
+.choice:active{ transform:scale(.99); }
+.choice.selected{ border-color:var(--accent); background:var(--accent-wash); }
+.choice .c-icon{
+  width:38px; height:38px; border-radius:50%; flex:none;
+  background:var(--accent-wash); display:flex; align-items:center; justify-content:center;
+  font-size:18px;
+}
+.choice.selected .c-icon{ background:var(--accent); }
+.choice .c-title{ font-family:'Zen Old Mincho',serif; font-size:16px; font-weight:500; color:var(--ink); }
+.choice .c-sub{ font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+
+/* LINE/メール詳細ブロック */
+.detail-block{ display:none; margin-top:22px; animation:fade .35s ease; }
+.detail-block.show{ display:block; }
+.example-box{
+  background:var(--line-soft); border-radius:12px;
+  padding:12px 16px; font-size:14px; color:var(--ink-soft);
+  margin:12px 0 4px;
+}
+.example-box b{ color:var(--ink); font-weight:600; }
+
+/* 送信完了 */
+.done{
+  flex:1; display:flex; flex-direction:column;
+  justify-content:center; align-items:center; text-align:center;
+  padding:30px 4px;
+}
+.done .seal{
+  width:64px; height:64px; border-radius:50%;
+  border:1px solid var(--accent); display:flex; align-items:center; justify-content:center;
+  margin:0 auto 28px; font-size:26px; color:var(--accent-deep);
+  background:var(--accent-wash);
+}
+.done-lead{
+  font-family:'Zen Old Mincho', serif;
+  font-size:20px; line-height:2; color:var(--ink);
+  font-weight:600; margin:0 0 24px;
+}
+.done-body{ font-size:14.5px; line-height:2.1; color:var(--ink-soft); max-width:25em; white-space:pre-line; }
+.roles-line{
+  font-family:'Zen Old Mincho', serif;
+  color:var(--accent-deep); font-size:15px; letter-spacing:.14em;
+  margin:16px 0; line-height:2;
+}
+
+/* ローディング */
+.loading-overlay{
+  position:fixed; inset:0; background:rgba(247,245,241,.92);
+  display:none; align-items:center; justify-content:center; flex-direction:column;
+  z-index:50; backdrop-filter:blur(2px);
+}
+.loading-overlay.show{ display:flex; }
+.spinner{
+  width:34px; height:34px; border:2px solid var(--line);
+  border-top-color:var(--accent); border-radius:50%;
+  animation:spin .8s linear infinite; margin-bottom:16px;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+.loading-overlay p{ font-family:'Zen Old Mincho',serif; color:var(--ink-soft); font-size:14px; }
+
+/* エラー表示 */
+.err{
+  color:#a8563f; font-size:13.5px; margin-top:12px; line-height:1.8;
+  background:#f7ede9; border-radius:10px; padding:12px 14px; display:none;
+}
+.err.show{ display:block; }
+
+/* 必須マーク */
+.req{ color:#b0765f; font-size:12px; margin-left:4px; }
+
+@media (max-width:360px){
+  body{ font-size:15px; }
+  .app{ padding:0 18px; }
+  .start-lead{ font-size:18px; }
+  .q-text{ font-size:17.5px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ START ============ -->
+  <section class="screen active" id="s-start">
+    <div class="start-eyebrow">お 金 と の 距 離 感 診 断</div>
+
+    <p class="start-lead">お金がもっとあったらいいのに。<br>そう思ったことはありませんか？</p>
+
+    <p class="start-body">でも、お金との関係は<br>「いくら持っているか」だけでは決まりません。</p>
+
+    <p class="start-body spaced">入ってきたら、どうする？
+使うとき、どんな気持ちになる？
+自分のためには使える？
+誰かのためなら使える？
+貯まっていくと安心する？
+それとも、なぜか使いたくなる？</p>
+
+    <div class="divider-dot">— — —</div>
+
+    <p class="start-role">そして——<br>あなたにとって、お金は今、<br><span class="em">何の役をしているのでしょう。</span></p>
+
+    <p class="start-body spaced">守ってくれるもの。
+誰かを助けるもの。
+楽しむためのもの。
+未来を叶えるもの。</p>
+
+    <p class="start-body">人によって、お金に与えている「役」は違います。</p>
+
+    <p class="start-body">この診断では、いくつかの質問から<br><b style="color:var(--ink);font-weight:500;">あなたとお金の「今の距離」</b><br>を一緒に見つけていきます。</p>
+
+    <div class="divider-dot">— — —</div>
+
+    <p class="start-note">良い・悪いを決める診断ではありません。<br>金運を占うものでもありません。</p>
+    <p class="start-note">今まで気づかなかった<br>「私とお金って、こんな関係だったんだ」<br>を見つけるための診断です。</p>
+
+    <div class="btn-wrap">
+      <button class="btn" onclick="go('s-info')">お金との距離を見てみる</button>
+    </div>
+  </section>
+
+  <!-- ============ 基本情報 ============ -->
+  <section class="screen" id="s-info">
+    <p class="section-title">はじめに</p>
+    <p class="field-label">お申込み時のお名前<span class="req">必須</span></p>
+    <p class="field-note">Facebook・Instagram・Threadsなど、お申込みいただいたSNSで確認できるお名前をご入力ください。</p>
+    <input type="text" class="text-input" id="in-name" placeholder="お名前" autocomplete="name">
+    <div class="err" id="err-name">お名前をご入力ください。</div>
+
+    <div class="nav">
+      <button class="btn-ghost" onclick="go('s-start')">戻る</button>
+      <button class="btn" onclick="submitName()">次へ</button>
+    </div>
+  </section>
+
+  <!-- ============ 開始前の一言 ============ -->
+  <section class="screen" id="s-intro">
+    <div class="interlude">
+      <div class="mark-line"></div>
+      <p class="interlude-lead">まずは、今のお金のことから。</p>
+      <p class="interlude-body">考えすぎなくて大丈夫です。<br>「今の自分ならこれかな」と思うものを選んでください。<br><br>正解も、不正解もありません。</p>
+    </div>
+    <div class="btn-wrap">
+      <button class="btn" onclick="startQuestions()">はじめる</button>
+    </div>
+  </section>
+
+  <!-- ============ 質問（動的） ============ -->
+  <section class="screen" id="s-question">
+    <div class="progress">
+      <div class="progress-top">
+        <span class="progress-count"><b id="q-cur">1</b> <span style="color:var(--ink-faint)">/</span> 18</span>
+        <span class="progress-label" id="q-tag">Q U E S T I O N</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="q-fill"></div></div>
+    </div>
+
+    <div class="q-num" id="q-numlabel">Question 01</div>
+    <h2 class="q-text" id="q-title"></h2>
+
+    <div class="options" id="q-options"></div>
+
+    <div class="nav">
+      <button class="btn-ghost" id="q-back" onclick="prevQuestion()">戻る</button>
+      <button class="btn" id="q-next" onclick="nextQuestion()" disabled>次へ</button>
+    </div>
+  </section>
+
+  <!-- ============ 中間画面（動的差し替え） ============ -->
+  <section class="screen" id="s-interlude">
+    <div class="interlude">
+      <div class="mark-line"></div>
+      <p class="interlude-lead" id="il-lead"></p>
+      <p class="interlude-body" id="il-body"></p>
+    </div>
+    <div class="btn-wrap">
+      <button class="btn" onclick="afterInterlude()">つづける</button>
+    </div>
+  </section>
+
+  <!-- ============ 連絡方法の分岐 ============ -->
+  <section class="screen" id="s-contact">
+    <p class="section-title">ご回答ありがとうございました。</p>
+    <p class="body-copy">いただいた回答は、一つひとつ確認したうえで個別に分析します。
+
+診断結果の準備ができましたら、
+結果をお伝えする日程調整のご連絡を差し上げます。
+
+ご希望の連絡方法をお選びください。</p>
+
+    <div class="choice-cards">
+      <button class="choice" id="ch-line" onclick="selectContact('line')">
+        <span class="c-icon">💬</span>
+        <span>
+          <div class="c-title">LINEで受け取る</div>
+          <div class="c-sub">公式LINE「ゆわの診断室」で受け取る</div>
+        </span>
+      </button>
+      <button class="choice" id="ch-mail" onclick="selectContact('mail')">
+        <span class="c-icon">✉️</span>
+        <span>
+          <div class="c-title">メールで受け取る</div>
+          <div class="c-sub">ご指定のメールアドレスで受け取る</div>
+        </span>
+      </button>
+    </div>
+
+    <!-- LINE詳細 -->
+    <div class="detail-block" id="detail-line">
+      <p class="body-copy">下のボタンから公式LINEを追加してください。
+
+追加後、本人確認のため
+「お金診断＋お申込み時のお名前」
+をこのLINEに送ってください。</p>
+      <div class="example-box">例：<b>お金診断　山田花子</b></div>
+    </div>
+
+    <!-- メール詳細 -->
+    <div class="detail-block" id="detail-mail">
+      <p class="field-label">メールアドレス<span class="req">必須</span></p>
+      <p class="field-note">診断結果の日程調整のご連絡をお送りします。受信可能なメールアドレスをご入力ください。</p>
+      <input type="email" class="text-input" id="in-email" placeholder="you@example.com" autocomplete="email" inputmode="email">
+      <p class="field-note small" style="margin-top:12px;">ご入力いただいた連絡先は、診断結果および日程調整等のご連絡に使用します。</p>
+      <div class="err" id="err-email">メールアドレスをご確認ください。</div>
+    </div>
+
+    <div class="err" id="err-contact">連絡方法をお選びください。</div>
+
+    <div class="nav">
+      <button class="btn-ghost" onclick="backToQuestions()">戻る</button>
+      <button class="btn" id="contact-submit" onclick="finalSubmit()">送信する</button>
+    </div>
+  </section>
+
+  <!-- ============ 送信完了 ============ -->
+  <section class="screen" id="s-done">
+    <div class="done">
+      <div class="seal">✦</div>
+      <p class="done-lead">あなたのお金の現在地を、<br>お預かりしました。</p>
+      <p class="done-body">この診断では、回答だけであなたを<br>単純な「○○タイプ」と決めつけません。</p>
+      <p class="roles-line">受け取る・守る・使う<br>渡す・増やす・叶える</p>
+      <p class="done-body">それぞれの働きと、その背景にある<br>考え方・感情・行動を合わせて読み解きます。</p>
+      <p class="done-body" style="margin-top:20px;">結果の準備ができましたら、<br>ご指定いただいた方法で<br>日程調整のご連絡をお送りします。</p>
+
+      <!-- LINE選択者向けボタン（動的表示） -->
+      <div class="btn-wrap" id="done-line-btn" style="display:none; width:100%;">
+        <a href="https://lin.ee/VprWfAI" target="_blank" rel="noopener" class="btn" style="display:block; text-align:center; text-decoration:none;">LINEで結果連絡を受け取る</a>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ローディング -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <p>お預かりしています…</p>
+</div>
+
+<script>
+/* ============================================================
+   設定：GASのウェブアプリURLをここに貼る
+   ============================================================ */
+const GAS_URL = "PASTE_YOUR_GAS_WEB_APP_URL_HERE";
+
+/* ============================================================
+   質問データ（仕様書の文章をそのまま使用）
+   type: 'choice' = 選択式 / 'text' = 自由記述
+   hasOther: 「その他（自由記述）」の追従欄を出すか
+   tag: 分析タグ（スプレッドシートには保存しないが構造として保持）
+   ============================================================ */
+const QUESTIONS = [
+  { type:'choice', hasOther:true, tag:'行動／お金の役',
+    q:'もし今、自由に使える10万円が入ってきたら、一番最初にどうしますか？',
+    opts:['貯める','支払い・返済に使う','家族や大切な人のために使う','自分が欲しかったもの・体験に使う','増やす方法を考える'] },
+
+  { type:'choice', hasOther:true, tag:'現在地',
+    q:'毎月のお金について、今の感覚に一番近いものは？',
+    opts:['足りないと感じることが多い','入ってくるが残りにくい','何とか回っている','ある程度安心して管理できている','もっと増やしたい'] },
+
+  { type:'choice', hasOther:false, tag:'受け取る／感情',
+    q:'予定外のお金が入ったとき、どんな気持ちが一番近いですか？',
+    opts:['すごく嬉しい','ほっとする','すぐ使い道を考える','なくなるのが怖い','受け取っていいのかなと思う','特に何も感じない'] },
+
+  { type:'choice', hasOther:false, tag:'使う／感情',
+    q:'自分のためにお金を使うとき、どんな気持ちになりますか？',
+    opts:['嬉しい・満足','必要なら普通に使える','少し迷う','罪悪感や申し訳なさがある','もったいなくて使えない','使った後に後悔しやすい'] },
+
+  { type:'choice', hasOther:false, tag:'自分と他者／渡す',
+    q:'同じ1万円なら、どちらに気持ちよく使えますか？',
+    opts:['自分','家族・大切な人','どちらも同じ','どちらにも使うのが不安','状況による'] },
+
+  { type:'choice', hasOther:false, tag:'受け取る／返報性',
+    q:'誰かからお金・ご馳走・プレゼントなどを受け取るときは？',
+    opts:['素直に嬉しく受け取れる','嬉しいが、お返しを考える','申し訳なくなる','できれば受け取りたくない','相手による'] },
+
+  { type:'choice', hasOther:false, tag:'守る／感情',
+    q:'お金が手元に残っていると、どんな感覚になりますか？',
+    opts:['安心する','嬉しくなる','もっと貯めたくなる','使ってはいけない気がする','なぜか使いたくなる','特に変わらない'] },
+
+  { type:'choice', hasOther:false, tag:'受け取る／信念',
+    q:'大きな金額を自分が受け取る場面を想像すると？',
+    opts:['ワクワクする','嬉しい','少し怖い','自分にそんな価値があるのかと思う','何か悪いことが起きそう','現実感がない'] },
+
+  { type:'choice', hasOther:false, tag:'信念',
+    q:'お金を得るには、どれが一番近いと思いますか？',
+    opts:['かなり頑張らないと得られない','人の役に立った対価として受け取るもの','工夫や仕組みでも増やせる','運やタイミングも大きい','よく分からない'] },
+
+  { type:'choice', hasOther:false, tag:'使う／信念',
+    q:'『お金を使うこと』に一番近いイメージは？',
+    opts:['人生を楽しむこと','必要なものと交換すること','減ってしまうこと','誰かを助けること','未来への投資','少し怖いこと'] },
+
+  { type:'choice', hasOther:false, tag:'豊かさ／罪悪感',
+    q:'自分が家族や身近な人より豊かになることを想像すると、どう感じますか？',
+    opts:['嬉しい・問題ない','自分も周りも幸せにしたい','少し申し訳ない','自分だけ豊かになるのは落ち着かない','批判されそうで怖い','考えたことがない'] },
+
+  { type:'text', tag:'叶える／自己実現',
+    q:'もし十分なお金があったら、本当は何をしてみたいですか？',
+    placeholder:'自由にお書きください' },
+
+  { type:'choice', hasOther:false, tag:'叶える／感情',
+    q:'Q12で書いたことを、本当に始められるとしたらどんな気持ちになりますか？',
+    opts:['すぐやりたい','楽しみ','嬉しいけれど少し怖い','できるとなると迷う','申し訳なさがある','何をしたらいいか分からない'] },
+
+  { type:'choice', hasOther:false, tag:'豊かさへのブレーキ',
+    q:'お金が増えたら、今より責任や負担も増えそうだと感じますか？',
+    opts:['まったく感じない','少し感じる','かなり感じる','増えると面倒なことも起きそう','考えたことがない'] },
+
+  { type:'text', tag:'形成された価値観',
+    q:'子どもの頃、家で『お金』についてよく聞いた言葉や、印象に残っている出来事はありますか？',
+    placeholder:'自由にお書きください' },
+
+  { type:'choice', hasOther:true, tag:'本人の課題認識',
+    q:'今、お金について一番変えたいことは何ですか？',
+    opts:['入ってくる額を増やしたい','残せるようになりたい','不安を減らしたい','自分にも気持ちよく使いたい','人のために使いすぎるのを見直したい','増やす・育てることを考えたい','夢ややりたいことに使えるようになりたい'] },
+
+  { type:'choice', hasOther:false, tag:'行動／Why Now',
+    q:'『もっとお金が入るようになるために、今できること』を考えたとき、一番近いものは？',
+    opts:['すぐ思いつくし動けそう','思いつくが動けていない','何となく分かるが怖い','何をすればいいか分からない','今は動ける余裕がない','増えてから考えたい'] },
+
+  { type:'text', tag:'統合・投影的問い',
+    q:'もし今の『お金』があなたに話しかけるとしたら、何と言っていると思いますか？',
+    placeholder:'自由にお書きください' },
+];
+
+/* 中間画面を差し込む位置（この問題「番号」を終えた直後に表示）
+   仕様書：数問ごとに短い中間画面。3つの導入文に対応。 */
+const INTERLUDES = {
+  2: { lead:'あなたとお金の距離を、もう少し見てみましょう。',
+       body:'' },
+  7: { lead:'ここからは、お金そのものではなく、',
+       body:'お金を持ったとき・使ったときに生まれる<br>「気持ち」に少し目を向けます。' },
+  14:{ lead:'最後に、',
+       body:'あなたがこれからお金と<br>どう付き合いたいのかを見ていきます。' },
+};
+
+/* ============================================================
+   状態
+   ============================================================ */
+const state = {
+  name:'',
+  answers:{},          // { 1:{value, isOther, otherText}, 12:{text}, ... }
+  current:0,           // 0-indexed の質問番号
+  contact:null,        // 'line' | 'mail'
+  email:'',
+  submitting:false,
+};
+
+/* ============================================================
+   画面遷移
+   ============================================================ */
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function submitName(){
+  const v = document.getElementById('in-name').value.trim();
+  const err = document.getElementById('err-name');
+  if(!v){ err.classList.add('show'); return; }
+  err.classList.remove('show');
+  state.name = v;
+  go('s-intro');
+}
+
+function startQuestions(){
+  state.current = 0;
+  renderQuestion();
+  go('s-question');
+}
+
+/* ============================================================
+   質問描画
+   ============================================================ */
+function renderQuestion(){
+  const i = state.current;
+  const Q = QUESTIONS[i];
+  const num = i+1;
+
+  document.getElementById('q-cur').textContent = num;
+  document.getElementById('q-numlabel').textContent = 'Question ' + String(num).padStart(2,'0');
+  document.getElementById('q-title').textContent = Q.q;
+  document.getElementById('q-fill').style.width = (num/QUESTIONS.length*100) + '%';
+
+  const back = document.getElementById('q-back');
+  back.style.visibility = (i===0) ? 'hidden' : 'visible';
+
+  const wrap = document.getElementById('q-options');
+  wrap.innerHTML = '';
+
+  const saved = state.answers[num];
+
+  if(Q.type === 'text'){
+    // 自由記述
+    const ta = document.createElement('textarea');
+    ta.className = 'freetext';
+    ta.id = 'free-input';
+    ta.placeholder = Q.placeholder || '';
+    ta.value = saved ? (saved.text||'') : '';
+    ta.addEventListener('input', ()=> updateNextState() );
+    wrap.appendChild(ta);
+  } else {
+    // 選択式
+    Q.opts.forEach((label, idx)=>{
+      const btn = document.createElement('button');
+      btn.className = 'opt';
+      btn.type = 'button';
+      btn.innerHTML = `<span class="opt-inner"><span class="mark"></span><span class="label">${label}</span></span>`;
+      if(saved && !saved.isOther && saved.value === label) btn.classList.add('selected');
+      btn.onclick = ()=> selectOption(num, label, false, btn);
+      wrap.appendChild(btn);
+    });
+    // その他
+    if(Q.hasOther){
+      const btn = document.createElement('button');
+      btn.className = 'opt';
+      btn.type = 'button';
+      btn.id = 'opt-other';
+      btn.innerHTML = `<span class="opt-inner"><span class="mark"></span><span class="label">その他（自由記述）</span></span>`;
+      if(saved && saved.isOther) btn.classList.add('selected');
+      btn.onclick = ()=> selectOption(num, 'その他', true, btn);
+      wrap.appendChild(btn);
+
+      const sub = document.createElement('div');
+      sub.className = 'sub-free' + (saved && saved.isOther ? ' show' : '');
+      sub.id = 'other-sub';
+      sub.innerHTML = `<textarea class="freetext" id="other-input" placeholder="自由にお書きください" style="min-height:90px;">${saved && saved.isOther ? (saved.otherText||'') : ''}</textarea>`;
+      wrap.appendChild(sub);
+      const oi = sub.querySelector('#other-input');
+      oi.addEventListener('input', ()=> updateNextState());
+    }
+  }
+
+  updateNextState();
+  window.scrollTo(0,0);
+}
+
+function selectOption(num, value, isOther, btnEl){
+  // 見た目
+  document.querySelectorAll('#q-options .opt').forEach(o=>o.classList.remove('selected'));
+  btnEl.classList.add('selected');
+  // その他欄の開閉
+  const sub = document.getElementById('other-sub');
+  if(sub){ sub.classList.toggle('show', isOther); }
+  // 保存
+  const prev = state.answers[num] || {};
+  state.answers[num] = {
+    value: value,
+    isOther: isOther,
+    otherText: isOther ? (document.getElementById('other-input')?.value || prev.otherText || '') : ''
+  };
+  updateNextState();
+  if(isOther){ setTimeout(()=>document.getElementById('other-input')?.focus(), 50); }
+}
+
+/* 「次へ」の活性判定＋自由記述の保存 */
+function updateNextState(){
+  const i = state.current;
+  const Q = QUESTIONS[i];
+  const num = i+1;
+  const next = document.getElementById('q-next');
+  let ok = false;
+
+  if(Q.type === 'text'){
+    const val = (document.getElementById('free-input')?.value || '').trim();
+    state.answers[num] = { text: val };
+    ok = val.length > 0;
+  } else {
+    const a = state.answers[num];
+    if(a){
+      if(a.isOther){
+        const ot = (document.getElementById('other-input')?.value || '').trim();
+        state.answers[num].otherText = ot;
+        ok = ot.length > 0;
+      } else {
+        ok = !!a.value;
+      }
+    }
+  }
+  next.disabled = !ok;
+}
+
+/* ============================================================
+   ナビ：次へ・戻る＋中間画面
+   ============================================================ */
+let pendingInterludeNext = null;
+
+function nextQuestion(){
+  const num = state.current + 1;
+
+  // この問題の直後に中間画面があるか
+  if(INTERLUDES[num] && state.current < QUESTIONS.length-1){
+    showInterlude(INTERLUDES[num]);
+    pendingInterludeNext = ()=>{
+      state.current++;
+      renderQuestion();
+      go('s-question');
+    };
+    return;
+  }
+
+  if(state.current < QUESTIONS.length-1){
+    state.current++;
+    renderQuestion();
+  } else {
+    // 全問終了 → 連絡方法へ
+    go('s-contact');
+  }
+}
+
+function prevQuestion(){
+  if(state.current > 0){
+    state.current--;
+    renderQuestion();
+  }
+}
+
+function showInterlude(data){
+  document.getElementById('il-lead').innerHTML = data.lead;
+  document.getElementById('il-body').innerHTML = data.body || '';
+  go('s-interlude');
+}
+function afterInterlude(){
+  if(pendingInterludeNext){ const f=pendingInterludeNext; pendingInterludeNext=null; f(); }
+}
+
+function backToQuestions(){
+  state.current = QUESTIONS.length - 1;
+  renderQuestion();
+  go('s-question');
+}
+
+/* ============================================================
+   連絡方法の分岐
+   ============================================================ */
+function selectContact(type){
+  state.contact = type;
+  document.getElementById('ch-line').classList.toggle('selected', type==='line');
+  document.getElementById('ch-mail').classList.toggle('selected', type==='mail');
+  document.getElementById('detail-line').classList.toggle('show', type==='line');
+  document.getElementById('detail-mail').classList.toggle('show', type==='mail');
+  document.getElementById('err-contact').classList.remove('show');
+}
+
+function validEmail(v){
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+
+/* ============================================================
+   最終送信
+   ============================================================ */
+async function finalSubmit(){
+  if(state.submitting) return;
+
+  if(!state.contact){
+    document.getElementById('err-contact').classList.add('show');
+    return;
+  }
+  if(state.contact === 'mail'){
+    const em = document.getElementById('in-email').value.trim();
+    if(!validEmail(em)){
+      document.getElementById('err-email').classList.add('show');
+      return;
+    }
+    document.getElementById('err-email').classList.remove('show');
+    state.email = em;
+  }
+
+  // 二重送信防止
+  state.submitting = true;
+  document.getElementById('contact-submit').disabled = true;
+  document.getElementById('loading').classList.add('show');
+
+  const payload = buildPayload();
+
+  try{
+    if(GAS_URL && !GAS_URL.startsWith('PASTE_')){
+      await fetch(GAS_URL, {
+        method:'POST',
+        // GASのdoPostはCORSプリフライトを避けるため text/plain で受ける
+        headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      // GAS未設定時：コンソールに出して2秒待つ（見た目確認用）
+      console.log('【送信データ（GAS未設定）】', payload);
+      await new Promise(r=>setTimeout(r,1500));
+    }
+    finishDone();
+  }catch(e){
+    console.error(e);
+    // no-cors的な失敗でも記録される場合があるため、基本は完了扱いにする。
+    // ただしネットワーク完全失敗はリトライ可能に戻す。
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('contact-submit').disabled = false;
+    state.submitting = false;
+    document.getElementById('err-contact').textContent =
+      '送信に失敗しました。通信環境をご確認のうえ、もう一度お試しください。';
+    document.getElementById('err-contact').classList.add('show');
+  }
+}
+
+function buildPayload(){
+  // Q1〜Q18を「回答テキスト」に整形
+  const qcols = {};
+  QUESTIONS.forEach((Q, idx)=>{
+    const num = idx+1;
+    const a = state.answers[num];
+    let val = '';
+    if(!a){ val=''; }
+    else if(Q.type==='text'){ val = a.text || ''; }
+    else if(a.isOther){ val = 'その他：' + (a.otherText||''); }
+    else { val = a.value || ''; }
+    qcols['Q'+num] = val;
+  });
+
+  return {
+    sns_name: state.name,
+    contact_method: state.contact === 'line' ? 'LINE' : 'メール',
+    email: state.contact === 'mail' ? state.email : '',
+    line_selected: state.contact === 'line' ? 'はい' : 'いいえ',
+    ...qcols,
+    tags: QUESTIONS.map((Q,i)=>('Q'+(i+1)+':'+Q.tag)).join(' / '), // 参考：分析タグ
+    submitted_at_client: new Date().toISOString(),
+  };
+}
+
+function finishDone(){
+  document.getElementById('loading').classList.remove('show');
+  // LINE選択者にはボタンを出す
+  document.getElementById('done-line-btn').style.display =
+    (state.contact === 'line') ? 'block' : 'none';
+  go('s-done');
+}
+</script>
+</body>
+</html>
