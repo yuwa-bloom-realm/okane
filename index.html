@@ -39,6 +39,7 @@
 :root{ color-scheme:light only; }
 
 *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+button{ touch-action:manipulation; }
 html,body{ margin:0; padding:0; }
 html{ background:#f7f5f1; }
 body{
@@ -205,6 +206,14 @@ body::before{
 .sub-free.show{ display:block; animation:fade .3s ease; }
 
 /* ===== ナビ（戻る／次へ） ===== */
+.q-hint{
+  font-size:13.5px; color:var(--accent-deep); text-align:center;
+  margin-top:20px; line-height:1.8; opacity:0; height:0; overflow:hidden;
+  transition:opacity .3s ease;
+}
+.q-hint.show{ opacity:1; height:auto; margin-top:20px; animation:fade .3s ease; }
+/* 未回答のあいだ「次へ」を少し淡く見せる（押下は可能） */
+.btn.is-waiting{ opacity:.55; box-shadow:none; }
 .nav{
   display:flex; gap:12px; margin-top:auto; padding-top:28px;
 }
@@ -427,9 +436,10 @@ body::before{
 
     <div class="options" id="q-options"></div>
 
+    <div class="q-hint" id="q-hint"></div>
     <div class="nav">
       <button class="btn-ghost" id="q-back" onclick="prevQuestion()">戻る</button>
-      <button class="btn" id="q-next" onclick="nextQuestion()" disabled>次へ</button>
+      <button class="btn" id="q-next" onclick="nextQuestion()">次へ</button>
     </div>
   </section>
 
@@ -472,13 +482,14 @@ body::before{
       </button>
     </div>
 
-    <!-- LINE詳細 -->
+    <!-- LINE詳細（送信前の予告） -->
     <div class="detail-block" id="detail-line">
-      <p class="body-copy">下のボタンから公式LINEを追加してください。
+      <p class="body-copy">「送信する」を押すと、
+公式LINEを追加する画面にご案内します。
 
 追加後、本人確認のため
 「お金診断＋お申込み時のお名前」
-をこのLINEに送ってください。</p>
+をLINEに送っていただきます。</p>
       <div class="example-box">例：<b>お金診断　山田花子</b></div>
     </div>
 
@@ -509,9 +520,15 @@ body::before{
       <p class="done-body">それぞれの働きと、その背景にある<br>考え方・感情・行動を合わせて読み解きます。</p>
       <p class="done-body" style="margin-top:20px;">結果の準備ができましたら、<br>ご指定いただいた方法で<br>日程調整のご連絡をお送りします。</p>
 
-      <!-- LINE選択者向けボタン（動的表示） -->
-      <div class="btn-wrap" id="done-line-btn" style="display:none; width:100%;">
-        <a href="https://lin.ee/VprWfAI" target="_blank" rel="noopener" class="btn" style="display:block; text-align:center; text-decoration:none;">LINEで結果連絡を受け取る</a>
+      <!-- LINE選択者向け案内＋ボタン（動的表示） -->
+      <div id="done-line-btn" style="display:none; width:100%;">
+        <div style="border-top:1px solid var(--line); margin:28px 0 22px;"></div>
+        <p class="done-body" style="margin-bottom:6px;">最後に、結果をお届けするための<br><b style="color:var(--ink);font-weight:600;">LINE追加</b>をお願いします。</p>
+        <p class="done-body" style="margin-bottom:16px;">追加後、本人確認のため<br>下のメッセージをLINEに送ってください。</p>
+        <div class="example-box" style="text-align:center; margin-bottom:20px;">お金診断　＋　お申込み時のお名前<br><span style="font-size:13px; color:var(--ink-faint);">例：お金診断　山田花子</span></div>
+        <div class="btn-wrap" style="width:100%;">
+          <a href="https://lin.ee/VprWfAI" target="_blank" rel="noopener" class="btn" style="display:block; text-align:center; text-decoration:none;">公式LINEを追加する</a>
+        </div>
       </div>
     </div>
   </section>
@@ -724,6 +741,8 @@ function renderQuestion(){
 }
 
 function selectOption(num, value, isOther, btnEl){
+  // 促し表示を消す
+  document.getElementById('q-hint')?.classList.remove('show');
   // 見た目
   document.querySelectorAll('#q-options .opt').forEach(o=>o.classList.remove('selected'));
   btnEl.classList.add('selected');
@@ -741,31 +760,34 @@ function selectOption(num, value, isOther, btnEl){
   if(isOther){ setTimeout(()=>document.getElementById('other-input')?.focus(), 50); }
 }
 
-/* 「次へ」の活性判定＋自由記述の保存 */
-function updateNextState(){
+/* 現在の問題が回答済みかを判定（自由記述の保存も兼ねる） */
+function isAnswered(){
   const i = state.current;
   const Q = QUESTIONS[i];
   const num = i+1;
-  const next = document.getElementById('q-next');
-  let ok = false;
 
   if(Q.type === 'text'){
     const val = (document.getElementById('free-input')?.value || '').trim();
     state.answers[num] = { text: val };
-    ok = val.length > 0;
+    return val.length > 0;
   } else {
     const a = state.answers[num];
-    if(a){
-      if(a.isOther){
-        const ot = (document.getElementById('other-input')?.value || '').trim();
-        state.answers[num].otherText = ot;
-        ok = ot.length > 0;
-      } else {
-        ok = !!a.value;
-      }
+    if(!a) return false;
+    if(a.isOther){
+      const ot = (document.getElementById('other-input')?.value || '').trim();
+      state.answers[num].otherText = ot;
+      return ot.length > 0;
     }
+    return !!a.value;
   }
-  next.disabled = !ok;
+}
+
+/* 「次へ」ボタンの見た目だけ更新（未回答なら少し淡く見せる。押下は常に可能） */
+function updateNextState(){
+  const next = document.getElementById('q-next');
+  const answered = isAnswered();
+  next.classList.toggle('is-waiting', !answered);
+  if(answered) document.getElementById('q-hint')?.classList.remove('show');
 }
 
 /* ============================================================
@@ -774,6 +796,12 @@ function updateNextState(){
 let pendingInterludeNext = null;
 
 function nextQuestion(){
+  // 未回答なら進めず、やさしく促す
+  if(!isAnswered()){
+    showNeedAnswer();
+    return;
+  }
+
   const num = state.current + 1;
 
   // この問題の直後に中間画面があるか
@@ -794,6 +822,16 @@ function nextQuestion(){
     // 全問終了 → 連絡方法へ
     go('s-contact');
   }
+}
+
+function showNeedAnswer(){
+  const el = document.getElementById('q-hint');
+  if(!el) return;
+  const Q = QUESTIONS[state.current];
+  el.textContent = (Q.type === 'text')
+    ? 'ひとことでも、思い浮かんだことをお書きください。'
+    : '当てはまるものを一つお選びください。';
+  el.classList.add('show');
 }
 
 function prevQuestion(){
@@ -865,12 +903,12 @@ async function finalSubmit(){
     if(GAS_URL && !GAS_URL.startsWith('PASTE_')){
       await fetch(GAS_URL, {
         method:'POST',
-        // GASのdoPostはCORSプリフライトを避けるため text/plain で受ける
+        mode:'no-cors',   // プリフライトを起こさず確実にPOSTを届ける
         headers:{ 'Content-Type':'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
       });
     } else {
-      // GAS未設定時：コンソールに出して2秒待つ（見た目確認用）
+      // GAS未設定時：コンソールに出して待つ（見た目確認用）
       console.log('【送信データ（GAS未設定）】', payload);
       await new Promise(r=>setTimeout(r,1500));
     }
